@@ -106,7 +106,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def get_gps_info(image_path):
-    """Extrait les coordonnées GPS des métadonnées EXIF de l'image ou génère des coordonnées fictives"""
+    """Extrait les coordonnées GPS des métadonnées EXIF de l'image"""
     try:
         image = Image.open(image_path)
         exif_data = image._getexif() if hasattr(image, '_getexif') else None
@@ -120,32 +120,26 @@ def get_gps_info(image_path):
                         gps_tag_name = GPSTAGS.get(gps_tag, gps_tag)
                         gps_info[gps_tag_name] = value[gps_tag]
             
-            if gps_info:
+            if gps_info and 'GPSLatitude' in gps_info and 'GPSLongitude' in gps_info:
                 # Conversion des coordonnées GPS
                 def convert_to_degrees(value):
                     d, m, s = value
                     return d + (m / 60.0) + (s / 3600.0)
                 
                 lat = convert_to_degrees(gps_info['GPSLatitude'])
-                if gps_info['GPSLatitudeRef'] == 'S':
+                if gps_info.get('GPSLatitudeRef') == 'S':
                     lat = -lat
                 
                 lon = convert_to_degrees(gps_info['GPSLongitude'])
-                if gps_info['GPSLongitudeRef'] == 'W':
+                if gps_info.get('GPSLongitudeRef') == 'W':
                     lon = -lon
                 
                 return (lat, lon)
         
-        # Si pas de GPS, générer des coordonnées aléatoires autour de Combronde
-        import hashlib
-        hash_val = int(hashlib.md5(str(image_path).encode()).hexdigest(), 16)
-        random.seed(hash_val)
-        lat = 45.9803 + random.uniform(-0.05, 0.05)  # ±5km environ
-        lon = 3.0889 + random.uniform(-0.07, 0.07)
-        return (lat, lon)
+        # Pas de coordonnées GPS trouvées
+        return None
         
     except Exception as e:
-        st.error(f"Erreur lors de la lecture de l'image: {e}")
         return None
 
 def init_game():
@@ -158,21 +152,28 @@ def init_game():
         st.error("Aucune image trouvée dans le dossier 'images'")
         return
     
-    # Choisir une image aléatoire
-    selected_image = random.choice(image_files)
-    gps_coords = get_gps_info(selected_image)
+    # Filtrer les images qui ont des coordonnées GPS valides
+    valid_images = []
+    for img_file in image_files:
+        gps_coords = get_gps_info(img_file)
+        if gps_coords:
+            valid_images.append((img_file, gps_coords))
     
-    if gps_coords:
-        st.session_state.current_image = str(selected_image)
-        st.session_state.target_coords = gps_coords
-        st.session_state.game_started = True
-        st.session_state.game_won = False
-        st.session_state.distance = None
-        st.session_state.marker_position = [45.9803, 3.0889]  # Réinitialiser la position du marqueur
-        st.session_state.map_zoom = 13  # Réinitialiser le zoom
-        st.session_state.map_key = 0  # Réinitialiser la clé de la carte
-    else:
-        st.error("Erreur lors du chargement de l'image")
+    if not valid_images:
+        st.error("Aucune image avec coordonnées GPS trouvée dans le dossier 'images'")
+        return
+    
+    # Choisir une image aléatoire parmi celles avec GPS
+    selected_image, gps_coords = random.choice(valid_images)
+    
+    st.session_state.current_image = str(selected_image)
+    st.session_state.target_coords = gps_coords
+    st.session_state.game_started = True
+    st.session_state.game_won = False
+    st.session_state.distance = None
+    st.session_state.marker_position = [45.9803, 3.0889]  # Réinitialiser la position du marqueur
+    st.session_state.map_zoom = 13  # Réinitialiser le zoom
+    st.session_state.map_key = 0  # Réinitialiser la clé de la carte
 
 # Initialisation de la session
 if 'game_started' not in st.session_state:
