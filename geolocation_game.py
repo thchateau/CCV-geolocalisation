@@ -298,6 +298,35 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
+# Section Documents
+st.markdown('<div class="section-card">', unsafe_allow_html=True)
+st.subheader("📄 Consultez nos différents documents")
+
+documents_dir = Path("documents")
+if documents_dir.exists():
+    pdf_files = list(documents_dir.glob("*.pdf")) + list(documents_dir.glob("*.PDF"))
+    
+    if pdf_files:
+        for pdf_file in sorted(pdf_files):
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write(f"📑 {pdf_file.name}")
+            with col2:
+                with open(pdf_file, "rb") as file:
+                    st.download_button(
+                        label="📥 Télécharger",
+                        data=file,
+                        file_name=pdf_file.name,
+                        mime="application/pdf",
+                        key=f"download_{pdf_file.name}"
+                    )
+    else:
+        st.info("Aucun document disponible pour le moment.")
+else:
+    st.info("Aucun document disponible pour le moment.")
+
+st.markdown('</div>', unsafe_allow_html=True)
+
 # Bouton admin dans le coin supérieur droit
 col_admin, col_spacer = st.columns([20, 1])
 with col_spacer:
