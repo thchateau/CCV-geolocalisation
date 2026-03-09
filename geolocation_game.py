@@ -281,7 +281,7 @@ if 'show_admin_login' not in st.session_state:
 
 # Interface principale
 # Logo et en-tête
-col_logo1, col_logo2, col_logo3 = st.columns([1, 1, 1])
+col_logo1, col_logo2, col_logo3 = st.columns([1.375, 1, 1.375])
 with col_logo2:
     if os.path.exists("logo.png"):
         st.image("logo.png", use_container_width=True)
