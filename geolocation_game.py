@@ -9,6 +9,7 @@ from pathlib import Path
 from geopy.distance import geodesic
 import piexif
 import io
+import base64
 
 # Configuration de la page
 st.set_page_config(
@@ -307,19 +308,34 @@ if documents_dir.exists():
     pdf_files = list(documents_dir.glob("*.pdf")) + list(documents_dir.glob("*.PDF"))
     
     if pdf_files:
-        for pdf_file in sorted(pdf_files):
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.write(f"📑 {pdf_file.name}")
-            with col2:
+        # Créer des onglets pour chaque PDF
+        tab_names = [pdf_file.stem for pdf_file in sorted(pdf_files)]
+        tabs = st.tabs(tab_names)
+        
+        for tab, pdf_file in zip(tabs, sorted(pdf_files)):
+            with tab:
+                # Lire le PDF et l'encoder en base64
                 with open(pdf_file, "rb") as file:
-                    st.download_button(
-                        label="📥 Télécharger",
-                        data=file,
-                        file_name=pdf_file.name,
-                        mime="application/pdf",
-                        key=f"download_{pdf_file.name}"
-                    )
+                    pdf_data = file.read()
+                    base64_pdf = base64.b64encode(pdf_data).decode('utf-8')
+                
+                # Afficher le PDF dans un iframe
+                pdf_display = f'''
+                    <iframe src="data:application/pdf;base64,{base64_pdf}" 
+                    width="100%" height="800" type="application/pdf"
+                    style="border: 2px solid #E87722; border-radius: 5px;">
+                    </iframe>
+                '''
+                st.markdown(pdf_display, unsafe_allow_html=True)
+                
+                # Bouton de téléchargement en dessous
+                st.download_button(
+                    label="📥 Télécharger ce document",
+                    data=pdf_data,
+                    file_name=pdf_file.name,
+                    mime="application/pdf",
+                    key=f"download_{pdf_file.name}"
+                )
     else:
         st.info("Aucun document disponible pour le moment.")
 else:
