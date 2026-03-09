@@ -290,6 +290,11 @@ st.markdown("""
     <div class="main-header">
         <h1>🗺️ Combrondaires : connaissez-vous votre commune ?</h1>
         <p>Trouvez où cette photo a été prise sur la carte de Combronde!</p>
+        <p style="font-size: 0.95rem; margin-top: 1rem; font-style: italic;">
+            Ce jeu vous est proposé par la liste électorale COMBRONDE C'est vous! 
+            Le patrimoine de notre commune est multiple et varié. 
+            Il est de notre ressort de le faire connaître.
+        </p>
     </div>
 """, unsafe_allow_html=True)
 
