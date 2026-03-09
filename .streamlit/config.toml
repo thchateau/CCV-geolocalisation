@@ -1,0 +1,9 @@
+[theme]
+primaryColor = "#E87722"  # Orange (boutons, liens)
+backgroundColor = "#F5F1E8"  # Beige clair (fond principal)
+secondaryBackgroundColor = "#FFFFFF"  # Blanc (cartes, sections)
+textColor = "#2C2C2C"  # Gris foncé (texte)
+font = "sans serif"
+
+[server]
+headless = true
