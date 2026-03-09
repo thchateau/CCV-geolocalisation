@@ -194,15 +194,23 @@ def set_gps_info(image_path, lat, lon):
         image = Image.open(image_path)
         
         try:
-            exif_dict = piexif.load(image.info.get('exif', b''))
+            exif_data = image.info.get('exif')
+            if exif_data:
+                exif_dict = piexif.load(exif_data)
+            else:
+                exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
         except:
             exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
         
         exif_dict['GPS'] = gps_ifd
         exif_bytes = piexif.dump(exif_dict)
         
+        # Convertir en RGB si nécessaire (pour JPEG)
+        if image.mode in ('RGBA', 'P', 'LA'):
+            image = image.convert('RGB')
+        
         # Sauvegarder l'image avec les nouvelles coordonnées
-        image.save(image_path, exif=exif_bytes)
+        image.save(image_path, "JPEG", exif=exif_bytes, quality=95)
         return True
         
     except Exception as e:
@@ -258,10 +266,10 @@ if 'show_admin_login' not in st.session_state:
 
 # Interface principale
 # Logo et en-tête
-col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
+col_logo1, col_logo2, col_logo3 = st.columns([1, 1, 1])
 with col_logo2:
     if os.path.exists("logo.png"):
-        st.image("logo.png", width=200)
+        st.image("logo.png", use_container_width=True)
 
 st.markdown("""
     <div class="main-header">
@@ -270,25 +278,11 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Interface principale
 # Bouton admin dans le coin supérieur droit
 col_admin, col_spacer = st.columns([20, 1])
 with col_spacer:
     if st.button("⚙️", help="Administration"):
         st.session_state.show_admin_login = True
-
-# Logo et en-tête
-col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
-with col_logo2:
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=200)
-
-st.markdown("""
-    <div class="main-header">
-        <h1>🗺️ Jeu de Géolocalisation</h1>
-        <p>Trouvez où cette photo a été prise sur la carte de Combronde!</p>
-    </div>
-""", unsafe_allow_html=True)
 
 # Interface Admin
 if st.session_state.show_admin_login:
