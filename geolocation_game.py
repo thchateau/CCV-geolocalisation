@@ -429,18 +429,6 @@ if st.session_state.game_started and not st.session_state.game_won:
         image = Image.open(st.session_state.current_image)
         st.image(image, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Affichage de la distance si une tentative a été faite
-        if st.session_state.distance is not None:
-            st.markdown(f"""
-                <div class="distance-display">
-                    📏 Distance: {st.session_state.distance:.2f} mètres
-                </div>
-            """, unsafe_allow_html=True)
-            if st.session_state.distance >= 50:
-                st.warning("🔍 Trop loin! Continuez à chercher...")
-            else:
-                st.info("🎯 Très proche! Affinez votre position!")
     
     # Colonne Carte
     with col_map:
@@ -492,6 +480,18 @@ if st.session_state.game_started and not st.session_state.game_won:
             if distance < 50:
                 st.session_state.game_won = True
                 st.rerun()
+        
+        # Affichage de la distance juste après le bouton
+        if st.session_state.distance is not None:
+            st.markdown(f"""
+                <div class="distance-display">
+                    📏 Distance: {st.session_state.distance:.2f} mètres
+                </div>
+            """, unsafe_allow_html=True)
+            if st.session_state.distance >= 50:
+                st.warning("🔍 Trop loin! Continuez à chercher...")
+            else:
+                st.info("🎯 Très proche! Affinez votre position!")
         
         st.markdown('</div>', unsafe_allow_html=True)
         
