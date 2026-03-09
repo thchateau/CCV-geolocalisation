@@ -96,6 +96,21 @@ st.markdown("""
         box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
     }
     
+    /* Responsive design pour petits écrans */
+    @media (max-width: 768px) {
+        .main-header h1 {
+            font-size: 1.8rem;
+        }
+        
+        .main-header p {
+            font-size: 1rem;
+        }
+        
+        iframe {
+            height: 500px !important;
+        }
+    }
+    
     /* Messages personnalisés */
     .stAlert {
         border-radius: 10px;
@@ -319,11 +334,11 @@ if documents_dir.exists():
                     pdf_data = file.read()
                     base64_pdf = base64.b64encode(pdf_data).decode('utf-8')
                 
-                # Afficher le PDF dans un iframe
+                # Afficher le PDF dans un iframe responsive
                 pdf_display = f'''
                     <iframe src="data:application/pdf;base64,{base64_pdf}" 
                     width="100%" height="800" type="application/pdf"
-                    style="border: 2px solid #E87722; border-radius: 5px;">
+                    style="border: 2px solid #E87722; border-radius: 5px; max-width: 100%; min-height: 600px;">
                     </iframe>
                 '''
                 st.markdown(pdf_display, unsafe_allow_html=True)
