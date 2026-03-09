@@ -7,6 +7,8 @@ import os
 import random
 from pathlib import Path
 from geopy.distance import geodesic
+import piexif
+import io
 
 # Configuration de la page
 st.set_page_config(
@@ -102,6 +104,25 @@ st.markdown("""
         justify-content: center;
         margin-bottom: 1rem;
     }
+    
+    /* Admin button */
+    .admin-icon {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 999;
+        font-size: 1.5rem;
+        cursor: pointer;
+        background: var(--marron);
+        color: white;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -142,6 +163,56 @@ def get_gps_info(image_path):
     except Exception as e:
         return None
 
+def set_gps_info(image_path, lat, lon):
+    """Ajoute les coordonnées GPS aux métadonnées EXIF d'une image"""
+    try:
+        # Convertir les coordonnées décimales en format GPS
+        def to_deg(value, is_lat):
+            abs_value = abs(value)
+            deg = int(abs_value)
+            min_float = (abs_value - deg) * 60
+            min_val = int(min_float)
+            sec = (min_float - min_val) * 60
+            
+            return (deg, min_val, sec)
+        
+        lat_deg = to_deg(lat, True)
+        lon_deg = to_deg(lon, False)
+        
+        lat_ref = 'N' if lat >= 0 else 'S'
+        lon_ref = 'E' if lon >= 0 else 'W'
+        
+        # Créer les données GPS
+        gps_ifd = {
+            piexif.GPSIFD.GPSLatitudeRef: lat_ref,
+            piexif.GPSIFD.GPSLatitude: [(lat_deg[0], 1), (lat_deg[1], 1), (int(lat_deg[2] * 100), 100)],
+            piexif.GPSIFD.GPSLongitudeRef: lon_ref,
+            piexif.GPSIFD.GPSLongitude: [(lon_deg[0], 1), (lon_deg[1], 1), (int(lon_deg[2] * 100), 100)],
+        }
+        
+        # Charger l'image et ses EXIF existants
+        image = Image.open(image_path)
+        
+        try:
+            exif_dict = piexif.load(image.info.get('exif', b''))
+        except:
+            exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
+        
+        exif_dict['GPS'] = gps_ifd
+        exif_bytes = piexif.dump(exif_dict)
+        
+        # Sauvegarder l'image avec les nouvelles coordonnées
+        image.save(image_path, exif=exif_bytes)
+        return True
+        
+    except Exception as e:
+        st.error(f"Erreur lors de l'ajout des coordonnées GPS: {e}")
+        return False
+
+def check_admin_password(password):
+    """Vérifie le mot de passe admin"""
+    return password == "Cpt2Combronde63!"
+
 def init_game():
     """Initialise une nouvelle partie"""
     images_dir = Path("images")
@@ -180,6 +251,10 @@ if 'game_started' not in st.session_state:
     st.session_state.game_started = False
     st.session_state.game_won = False
     st.session_state.distance = None
+if 'admin_logged_in' not in st.session_state:
+    st.session_state.admin_logged_in = False
+if 'show_admin_login' not in st.session_state:
+    st.session_state.show_admin_login = False
 
 # Interface principale
 # Logo et en-tête
@@ -194,6 +269,134 @@ st.markdown("""
         <p>Trouvez où cette photo a été prise sur la carte de Combronde!</p>
     </div>
 """, unsafe_allow_html=True)
+
+# Interface principale
+# Bouton admin dans le coin supérieur droit
+col_admin, col_spacer = st.columns([20, 1])
+with col_spacer:
+    if st.button("⚙️", help="Administration"):
+        st.session_state.show_admin_login = True
+
+# Logo et en-tête
+col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
+with col_logo2:
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=200)
+
+st.markdown("""
+    <div class="main-header">
+        <h1>🗺️ Jeu de Géolocalisation</h1>
+        <p>Trouvez où cette photo a été prise sur la carte de Combronde!</p>
+    </div>
+""", unsafe_allow_html=True)
+
+# Interface Admin
+if st.session_state.show_admin_login:
+    with st.sidebar:
+        st.title("⚙️ Administration")
+        
+        if not st.session_state.admin_logged_in:
+            st.subheader("🔐 Connexion")
+            password = st.text_input("Mot de passe:", type="password", key="admin_password")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Connexion"):
+                    if check_admin_password(password):
+                        st.session_state.admin_logged_in = True
+                        st.rerun()
+                    else:
+                        st.error("Mot de passe incorrect!")
+            with col2:
+                if st.button("Annuler"):
+                    st.session_state.show_admin_login = False
+                    st.rerun()
+        else:
+            st.success("✅ Connecté en tant qu'admin")
+            
+            if st.button("🚪 Déconnexion"):
+                st.session_state.admin_logged_in = False
+                st.session_state.show_admin_login = False
+                st.rerun()
+            
+            st.divider()
+            
+            # Import d'image
+            st.subheader("📤 Importer une image")
+            uploaded_file = st.file_uploader("Choisir une image", type=['jpg', 'jpeg', 'png'], key="upload")
+            
+            if uploaded_file:
+                # Sauvegarder temporairement l'image
+                temp_path = Path("images") / uploaded_file.name
+                
+                with open(temp_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                
+                st.image(uploaded_file, caption=uploaded_file.name, use_container_width=True)
+                
+                # Vérifier si l'image a des coordonnées GPS
+                gps_coords = get_gps_info(temp_path)
+                
+                if gps_coords:
+                    st.success(f"✅ Image avec GPS: {gps_coords[0]:.6f}, {gps_coords[1]:.6f}")
+                    if st.button("💾 Sauvegarder l'image"):
+                        st.success(f"Image '{uploaded_file.name}' ajoutée avec succès!")
+                else:
+                    st.warning("⚠️ Cette image n'a pas de coordonnées GPS")
+                    st.info("📍 Cliquez sur la carte pour définir la position")
+                    
+                    # Initialiser la position pour la géolocalisation manuelle
+                    if 'admin_marker_position' not in st.session_state:
+                        st.session_state.admin_marker_position = [45.9803, 3.0889]
+                    if 'admin_map_zoom' not in st.session_state:
+                        st.session_state.admin_map_zoom = 13
+                    
+                    # Carte pour définir la position
+                    admin_map = folium.Map(
+                        location=st.session_state.admin_marker_position,
+                        zoom_start=st.session_state.admin_map_zoom,
+                        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                        attr='Esri'
+                    )
+                    
+                    folium.Marker(
+                        location=st.session_state.admin_marker_position,
+                        icon=folium.Icon(color='blue', icon='info-sign'),
+                        draggable=False
+                    ).add_to(admin_map)
+                    
+                    admin_map_data = st_folium(
+                        admin_map,
+                        width=None,
+                        height=400,
+                        returned_objects=["last_clicked", "zoom"],
+                        key=f"admin_map_{st.session_state.get('admin_map_key', 0)}"
+                    )
+                    
+                    # Mise à jour de la position du marqueur admin
+                    if admin_map_data and admin_map_data.get('last_clicked') is not None:
+                        new_lat = admin_map_data['last_clicked']['lat']
+                        new_lng = admin_map_data['last_clicked']['lng']
+                        
+                        if (st.session_state.admin_marker_position[0] != new_lat or 
+                            st.session_state.admin_marker_position[1] != new_lng):
+                            st.session_state.admin_marker_position = [new_lat, new_lng]
+                            
+                            if admin_map_data.get('zoom'):
+                                st.session_state.admin_map_zoom = admin_map_data['zoom']
+                            
+                            st.session_state.admin_map_key = st.session_state.get('admin_map_key', 0) + 1
+                            st.rerun()
+                    
+                    st.write(f"📍 Position: {st.session_state.admin_marker_position[0]:.6f}, {st.session_state.admin_marker_position[1]:.6f}")
+                    
+                    if st.button("💾 C'est ICI - Sauvegarder avec cette position"):
+                        # Ajouter les coordonnées GPS à l'image
+                        if set_gps_info(temp_path, st.session_state.admin_marker_position[0], st.session_state.admin_marker_position[1]):
+                            st.success(f"✅ Image '{uploaded_file.name}' sauvegardée avec GPS!")
+                            st.session_state.admin_marker_position = [45.9803, 3.0889]
+                            st.session_state.admin_map_key = 0
+                        else:
+                            st.error("❌ Erreur lors de la sauvegarde")
 
 # Bouton pour démarrer/redémarrer
 if not st.session_state.game_started or st.session_state.game_won:
