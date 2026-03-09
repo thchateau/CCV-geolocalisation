@@ -323,13 +323,16 @@ if documents_dir.exists():
     pdf_files = list(documents_dir.glob("*.pdf")) + list(documents_dir.glob("*.PDF"))
     
     if pdf_files:
-        # Créer des onglets pour chaque PDF
-        tab_names = [pdf_file.stem for pdf_file in sorted(pdf_files)]
-        tabs = st.tabs(tab_names)
-        
-        for tab, pdf_file in zip(tabs, sorted(pdf_files)):
-            with tab:
-                # Lire le PDF et l'encoder en base64
+        for pdf_file in sorted(pdf_files):
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write(f"📑 {pdf_file.stem}")
+            with col2:
+                if st.button("👁️ Visualiser", key=f"view_{pdf_file.name}"):
+                    st.session_state[f"show_pdf_{pdf_file.name}"] = True
+            
+            # Afficher le PDF si le bouton a été cliqué
+            if st.session_state.get(f"show_pdf_{pdf_file.name}", False):
                 with open(pdf_file, "rb") as file:
                     pdf_data = file.read()
                     base64_pdf = base64.b64encode(pdf_data).decode('utf-8')
@@ -343,14 +346,23 @@ if documents_dir.exists():
                 '''
                 st.markdown(pdf_display, unsafe_allow_html=True)
                 
-                # Bouton de téléchargement en dessous
-                st.download_button(
-                    label="📥 Télécharger ce document",
-                    data=pdf_data,
-                    file_name=pdf_file.name,
-                    mime="application/pdf",
-                    key=f"download_{pdf_file.name}"
-                )
+                # Boutons en dessous du PDF
+                col_dl, col_close = st.columns([1, 1])
+                with col_dl:
+                    st.download_button(
+                        label="📥 Télécharger",
+                        data=pdf_data,
+                        file_name=pdf_file.name,
+                        mime="application/pdf",
+                        key=f"download_{pdf_file.name}",
+                        use_container_width=True
+                    )
+                with col_close:
+                    if st.button("❌ Fermer", key=f"close_{pdf_file.name}", use_container_width=True):
+                        st.session_state[f"show_pdf_{pdf_file.name}"] = False
+                        st.rerun()
+                
+                st.divider()
     else:
         st.info("Aucun document disponible pour le moment.")
 else:
