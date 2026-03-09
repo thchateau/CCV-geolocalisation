@@ -12,7 +12,7 @@ import io
 
 # Configuration de la page
 st.set_page_config(
-    page_title="Jeu de Géolocalisation - Combronde",
+    page_title="Combronde c'est vous ! Connaissez vous votre commune ?",
     page_icon="🗺️",
     layout="wide"
 )
@@ -273,7 +273,7 @@ with col_logo2:
 
 st.markdown("""
     <div class="main-header">
-        <h1>🗺️ Jeu de Géolocalisation</h1>
+        <h1>🗺️ Combrondaires : connaissez-vous votre commune ?</h1>
         <p>Trouvez où cette photo a été prise sur la carte de Combronde!</p>
     </div>
 """, unsafe_allow_html=True)
@@ -399,21 +399,69 @@ if not st.session_state.game_started or st.session_state.game_won:
         st.rerun()
 
 if st.session_state.game_started and not st.session_state.game_won:
-    # Affichage de l'image
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.subheader("📸 Photo mystère")
-    image = Image.open(st.session_state.current_image)
-    st.image(image, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Layout responsive : côte à côte sur grands écrans, empilé sur petits écrans
+    col_image, col_map = st.columns([1, 1], gap="medium")
     
-    # Carte en dessous
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.subheader("🗺️ Carte OpenStreetMap")
-    st.write("🖱️ Cliquez sur la carte pour positionner la loupe rouge")
+    # Colonne Image
+    with col_image:
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        st.subheader("📸 Photo mystère")
+        image = Image.open(st.session_state.current_image)
+        st.image(image, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Affichage de la distance si une tentative a été faite
+        if st.session_state.distance is not None:
+            st.markdown(f"""
+                <div class="distance-display">
+                    📏 Distance: {st.session_state.distance:.2f} mètres
+                </div>
+            """, unsafe_allow_html=True)
+            if st.session_state.distance >= 50:
+                st.warning("🔍 Trop loin! Continuez à chercher...")
+            else:
+                st.info("🎯 Très proche! Affinez votre position!")
     
-    # Bouton de validation AVANT la carte, centré
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
+    # Colonne Carte
+    with col_map:
+        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+        st.subheader("🗺️ Carte OpenStreetMap")
+        st.write("🖱️ Cliquez sur la carte pour positionner la loupe rouge")
+        
+        # Initialiser la position du marqueur si pas déjà fait
+        if 'marker_position' not in st.session_state:
+            st.session_state.marker_position = [45.9803, 3.0889]
+        if 'map_zoom' not in st.session_state:
+            st.session_state.map_zoom = 13
+        
+        # Création de la carte centrée sur le marqueur
+        m = folium.Map(
+            location=st.session_state.marker_position,
+            zoom_start=st.session_state.map_zoom,
+            tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            attr='Esri'
+        )
+        
+        # Ajout d'un marqueur mobile (loupe rouge)
+        folium.Marker(
+            location=st.session_state.marker_position,
+            icon=folium.Icon(color='red', icon='search'),
+            draggable=False
+        ).add_to(m)
+        
+        # Affichage de la carte avec click listener
+        map_data = st_folium(
+            m,
+            width=None,
+            height=500,
+            returned_objects=["last_clicked", "zoom"],
+            key=f"map_{st.session_state.get('map_key', 0)}"
+        )
+        
+        # Afficher les coordonnées du marqueur en temps réel
+        st.caption(f"📍 Position du marqueur: {st.session_state.marker_position[0]:.6f}, {st.session_state.marker_position[1]:.6f}")
+        
+        # Bouton de validation centré
         if st.button("📍 C'est ICI!", type="primary", use_container_width=True):
             user_coords = tuple(st.session_state.marker_position)
             
@@ -424,65 +472,25 @@ if st.session_state.game_started and not st.session_state.game_won:
             if distance < 50:
                 st.session_state.game_won = True
                 st.rerun()
-    
-    # Initialiser la position du marqueur si pas déjà fait
-    if 'marker_position' not in st.session_state:
-        st.session_state.marker_position = [45.9803, 3.0889]
-    if 'map_zoom' not in st.session_state:
-        st.session_state.map_zoom = 13
-    
-    # Création de la carte centrée sur le marqueur
-    m = folium.Map(
-        location=st.session_state.marker_position,
-        zoom_start=st.session_state.map_zoom,
-        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attr='Esri'
-    )
-    
-    # Ajout d'un marqueur mobile (loupe rouge)
-    folium.Marker(
-        location=st.session_state.marker_position,
-        icon=folium.Icon(color='red', icon='search'),
-        draggable=False
-    ).add_to(m)
-    
-    # Affichage de la carte avec click listener
-    map_data = st_folium(
-        m,
-        width=None,
-        height=600,
-        returned_objects=["last_clicked", "zoom"],
-        key=f"map_{st.session_state.get('map_key', 0)}"
-    )
-    
-    # Mettre à jour la position du marqueur si l'utilisateur a cliqué
-    if map_data and map_data.get('last_clicked') is not None:
-        new_lat = map_data['last_clicked']['lat']
-        new_lng = map_data['last_clicked']['lng']
         
-        # Vérifier que la position a changé pour éviter les boucles infinies
-        if (st.session_state.marker_position[0] != new_lat or 
-            st.session_state.marker_position[1] != new_lng):
-            st.session_state.marker_position = [new_lat, new_lng]
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Mettre à jour la position du marqueur si l'utilisateur a cliqué
+        if map_data and map_data.get('last_clicked') is not None:
+            new_lat = map_data['last_clicked']['lat']
+            new_lng = map_data['last_clicked']['lng']
             
-            # Sauvegarder le niveau de zoom actuel
-            if map_data.get('zoom'):
-                st.session_state.map_zoom = map_data['zoom']
-            
-            st.session_state.map_key = st.session_state.get('map_key', 0) + 1
-            st.rerun()
-    
-    # Affichage de la distance si une tentative a été faite
-    if st.session_state.distance is not None:
-        st.markdown(f"""
-            <div class="distance-display">
-                📏 Distance: {st.session_state.distance:.2f} mètres
-            </div>
-        """, unsafe_allow_html=True)
-        if st.session_state.distance >= 50:
-            st.warning("🔍 Trop loin! Continuez à chercher...")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+            # Vérifier que la position a changé pour éviter les boucles infinies
+            if (st.session_state.marker_position[0] != new_lat or 
+                st.session_state.marker_position[1] != new_lng):
+                st.session_state.marker_position = [new_lat, new_lng]
+                
+                # Sauvegarder le niveau de zoom actuel
+                if map_data.get('zoom'):
+                    st.session_state.map_zoom = map_data['zoom']
+                
+                st.session_state.map_key = st.session_state.get('map_key', 0) + 1
+                st.rerun()
 
 # Écran de victoire
 if st.session_state.game_won:
