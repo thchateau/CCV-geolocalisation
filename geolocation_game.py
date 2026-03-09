@@ -252,31 +252,35 @@ def check_admin_password(password):
     """Vérifie le mot de passe admin"""
     return password == "Cpt2Combronde63!"
 
-def init_game():
-    """Initialise une nouvelle partie"""
+def load_valid_images():
+    """Charge toutes les images valides (avec coordonnées GPS)"""
     images_dir = Path("images")
     image_files = list(images_dir.glob("*.jpeg")) + list(images_dir.glob("*.jpg")) + \
                   list(images_dir.glob("*.JPEG")) + list(images_dir.glob("*.JPG"))
     
-    if not image_files:
-        st.error("Aucune image trouvée dans le dossier 'images'")
-        return
-    
-    # Filtrer les images qui ont des coordonnées GPS valides
     valid_images = []
     for img_file in image_files:
         gps_coords = get_gps_info(img_file)
         if gps_coords:
-            valid_images.append((img_file, gps_coords))
+            valid_images.append((str(img_file), gps_coords))
+    
+    return valid_images
+
+def init_game():
+    """Initialise une nouvelle partie"""
+    valid_images = load_valid_images()
+    random.shuffle(valid_images)
     
     if not valid_images:
         st.error("Aucune image avec coordonnées GPS trouvée dans le dossier 'images'")
         return
     
-    # Choisir une image aléatoire parmi celles avec GPS
-    selected_image, gps_coords = random.choice(valid_images)
+    st.session_state.image_list = valid_images
+    st.session_state.current_image_index = 0
     
-    st.session_state.current_image = str(selected_image)
+    selected_image, gps_coords = valid_images[0]
+    
+    st.session_state.current_image = selected_image
     st.session_state.target_coords = gps_coords
     st.session_state.game_started = True
     st.session_state.game_won = False
@@ -284,6 +288,23 @@ def init_game():
     st.session_state.marker_position = [45.9803, 3.0889]  # Réinitialiser la position du marqueur
     st.session_state.map_zoom = 13  # Réinitialiser le zoom
     st.session_state.map_key = 0  # Réinitialiser la clé de la carte
+
+def navigate_to_image(index):
+    """Navigue vers l'image à l'index donné"""
+    valid_images = st.session_state.get('image_list', [])
+    if not valid_images:
+        return
+    n = len(valid_images)
+    new_index = index % n
+    st.session_state.current_image_index = new_index
+    selected_image, gps_coords = valid_images[new_index]
+    st.session_state.current_image = selected_image
+    st.session_state.target_coords = gps_coords
+    st.session_state.game_won = False
+    st.session_state.distance = None
+    st.session_state.marker_position = [45.9803, 3.0889]
+    st.session_state.map_zoom = 13
+    st.session_state.map_key = st.session_state.get('map_key', 0) + 1
 
 # Initialisation de la session
 if 'game_started' not in st.session_state:
@@ -500,6 +521,22 @@ if st.session_state.game_started and not st.session_state.game_won:
         st.subheader("📸 Photo mystère")
         image = Image.open(st.session_state.current_image)
         st.image(image, use_container_width=True)
+        
+        # Navigation entre les photos
+        n_images = len(st.session_state.get('image_list', []))
+        current_idx = st.session_state.get('current_image_index', 0)
+        if n_images > 1:
+            st.caption(f"Photo {current_idx + 1} / {n_images}")
+            col_prev, col_next = st.columns(2)
+            with col_prev:
+                if st.button("⬅️ Photo précédente", use_container_width=True):
+                    navigate_to_image(current_idx - 1)
+                    st.rerun()
+            with col_next:
+                if st.button("➡️ Photo suivante", use_container_width=True):
+                    navigate_to_image(current_idx + 1)
+                    st.rerun()
+        
         st.markdown('</div>', unsafe_allow_html=True)
     
     # Colonne Carte
