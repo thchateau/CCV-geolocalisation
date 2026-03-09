@@ -72,12 +72,27 @@ st.markdown("""
     
     /* Cartes de sections */
     .section-card {
-        background-color: var(--beige);
+        background-color: white;
         padding: 1.5rem;
-        border-radius: 10px;
-        border-left: 5px solid var(--orange);
+        border-radius: 15px;
+        border: 3px solid var(--orange);
         margin-bottom: 1rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    /* Cadres pour images */
+    .stImage {
+        border: 4px solid var(--marron);
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        overflow: hidden;
+    }
+    
+    /* Cadres pour cartes Folium */
+    iframe {
+        border: 4px solid var(--vert-olive) !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
     }
     
     /* Messages personnalisés */
