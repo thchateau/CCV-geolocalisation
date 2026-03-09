@@ -486,7 +486,7 @@ if st.session_state.show_admin_login:
 
 # Bouton pour démarrer/redémarrer
 if not st.session_state.game_started or st.session_state.game_won:
-    if st.button("🎮 Nouvelle Partie" if st.session_state.game_won else "🎮 Démarrer"):
+    if st.button("🎮 Nouvelle Partie" if st.session_state.game_won else "🎮 Démarrer le jeu de géo-loc"):
         init_game()
         st.rerun()
 
@@ -541,17 +541,25 @@ if st.session_state.game_started and not st.session_state.game_won:
         # Afficher les coordonnées du marqueur en temps réel
         st.caption(f"📍 Position du marqueur: {st.session_state.marker_position[0]:.6f}, {st.session_state.marker_position[1]:.6f}")
         
-        # Bouton de validation centré
-        if st.button("📍 C'est ICI!", type="primary", use_container_width=True):
-            user_coords = tuple(st.session_state.marker_position)
-            
-            # Calcul de la distance
-            distance = geodesic(st.session_state.target_coords, user_coords).meters
-            st.session_state.distance = distance
-            
-            if distance < 50:
-                st.session_state.game_won = True
+        # Boutons d'action
+        col_btn1, col_btn2 = st.columns([1, 1])
+        with col_btn1:
+            if st.button("🎯 Recentrer sur Combronde", use_container_width=True):
+                st.session_state.marker_position = [45.9803, 3.0889]
+                st.session_state.map_zoom = 13
+                st.session_state.map_key = st.session_state.get('map_key', 0) + 1
                 st.rerun()
+        with col_btn2:
+            if st.button("📍 C'est ICI!", type="primary", use_container_width=True):
+                user_coords = tuple(st.session_state.marker_position)
+                
+                # Calcul de la distance
+                distance = geodesic(st.session_state.target_coords, user_coords).meters
+                st.session_state.distance = distance
+                
+                if distance < 50:
+                    st.session_state.game_won = True
+                    st.rerun()
         
         # Affichage de la distance juste après le bouton
         if st.session_state.distance is not None:
