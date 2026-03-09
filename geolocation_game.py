@@ -417,6 +417,20 @@ if st.session_state.game_started and not st.session_state.game_won:
     st.subheader("🗺️ Carte OpenStreetMap")
     st.write("🖱️ Cliquez sur la carte pour positionner la loupe rouge")
     
+    # Bouton de validation AVANT la carte, centré
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("📍 C'est ICI!", type="primary", use_container_width=True):
+            user_coords = tuple(st.session_state.marker_position)
+            
+            # Calcul de la distance
+            distance = geodesic(st.session_state.target_coords, user_coords).meters
+            st.session_state.distance = distance
+            
+            if distance < 50:
+                st.session_state.game_won = True
+                st.rerun()
+    
     # Initialiser la position du marqueur si pas déjà fait
     if 'marker_position' not in st.session_state:
         st.session_state.marker_position = [45.9803, 3.0889]
@@ -462,18 +476,6 @@ if st.session_state.game_started and not st.session_state.game_won:
                 st.session_state.map_zoom = map_data['zoom']
             
             st.session_state.map_key = st.session_state.get('map_key', 0) + 1
-            st.rerun()
-    
-    # Bouton de validation
-    if st.button("📍 C'est ICI!", type="primary"):
-        user_coords = tuple(st.session_state.marker_position)
-        
-        # Calcul de la distance
-        distance = geodesic(st.session_state.target_coords, user_coords).meters
-        st.session_state.distance = distance
-        
-        if distance < 50:
-            st.session_state.game_won = True
             st.rerun()
     
     # Affichage de la distance si une tentative a été faite
