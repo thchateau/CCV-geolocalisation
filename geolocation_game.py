@@ -111,6 +111,15 @@ st.markdown("""
         }
     }
     
+    /* Séparateurs (dividers) */
+    hr {
+        border: none;
+        height: 3px;
+        background: linear-gradient(90deg, var(--marron) 0%, var(--vert-olive) 50%, var(--marron) 100%);
+        margin: 2rem 0;
+        border-radius: 2px;
+    }
+    
     /* Messages personnalisés */
     .stAlert {
         border-radius: 10px;
