@@ -120,6 +120,12 @@ st.markdown("""
         border-radius: 2px;
     }
     
+    /* Séparateurs sous les subheaders */
+    h2, h3 {
+        border-bottom: 3px solid var(--marron) !important;
+        padding-bottom: 0.5rem !important;
+    }
+    
     /* Messages personnalisés */
     .stAlert {
         border-radius: 10px;
