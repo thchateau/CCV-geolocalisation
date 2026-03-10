@@ -333,15 +333,32 @@ if documents_dir.exists():
     
     if pdf_files:
         for pdf_file in sorted(pdf_files):
+            # Vérifier la taille du fichier (limite: 5 MB)
+            file_size_mb = pdf_file.stat().st_size / (1024 * 1024)
+            
             col1, col2 = st.columns([3, 1])
             with col1:
                 st.write(f"📑 {pdf_file.stem}")
+                if file_size_mb > 5:
+                    st.caption("⚠️ Fichier trop gros pour être visualisé (téléchargement uniquement)")
             with col2:
-                if st.button("👁️ Visualiser", key=f"view_{pdf_file.name}"):
-                    st.session_state[f"show_pdf_{pdf_file.name}"] = True
+                if file_size_mb <= 5:
+                    if st.button("👁️ Visualiser", key=f"view_{pdf_file.name}"):
+                        st.session_state[f"show_pdf_{pdf_file.name}"] = True
+                else:
+                    # Bouton de téléchargement pour les gros fichiers
+                    with open(pdf_file, "rb") as file:
+                        st.download_button(
+                            label="📥 Télécharger",
+                            data=file,
+                            file_name=pdf_file.name,
+                            mime="application/pdf",
+                            key=f"download_large_{pdf_file.name}",
+                            width='stretch'
+                        )
             
-            # Afficher le PDF si le bouton a été cliqué
-            if st.session_state.get(f"show_pdf_{pdf_file.name}", False):
+            # Afficher le PDF si le bouton a été cliqué (seulement pour les petits fichiers)
+            if file_size_mb <= 5 and st.session_state.get(f"show_pdf_{pdf_file.name}", False):
                 with open(pdf_file, "rb") as file:
                     pdf_data = file.read()
                     base64_pdf = base64.b64encode(pdf_data).decode('utf-8')
