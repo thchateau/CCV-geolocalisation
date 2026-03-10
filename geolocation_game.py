@@ -309,7 +309,7 @@ if 'show_admin_login' not in st.session_state:
 col_logo1, col_logo2, col_logo3 = st.columns([1.375, 1, 1.375])
 with col_logo2:
     if os.path.exists("logo.png"):
-        st.image("logo.png", use_container_width=True)
+        st.image("logo.png", width='stretch')
 
 st.markdown("""
     <div class="main-header">
@@ -364,10 +364,10 @@ if documents_dir.exists():
                         file_name=pdf_file.name,
                         mime="application/pdf",
                         key=f"download_{pdf_file.name}",
-                        use_container_width=True
+                        width='stretch'
                     )
                 with col_close:
-                    if st.button("❌ Fermer", key=f"close_{pdf_file.name}", use_container_width=True):
+                    if st.button("❌ Fermer", key=f"close_{pdf_file.name}", width='stretch'):
                         st.session_state[f"show_pdf_{pdf_file.name}"] = False
                         st.rerun()
                 
@@ -426,7 +426,7 @@ if st.session_state.show_admin_login:
                 with open(temp_path, "wb") as f:
                     f.write(uploaded_file.getbuffer())
                 
-                st.image(uploaded_file, caption=uploaded_file.name, use_container_width=True)
+                st.image(uploaded_file, caption=uploaded_file.name, width='stretch')
                 
                 # Vérifier si l'image a des coordonnées GPS
                 gps_coords = get_gps_info(temp_path)
@@ -508,7 +508,7 @@ if st.session_state.game_started and not st.session_state.game_won:
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("📸 Photo mystère")
         image = Image.open(st.session_state.current_image)
-        st.image(image, use_container_width=True)
+        st.image(image, width='stretch')
         st.markdown('</div>', unsafe_allow_html=True)
     
     # Colonne Carte
@@ -553,13 +553,13 @@ if st.session_state.game_started and not st.session_state.game_won:
         # Boutons d'action
         col_btn1, col_btn2 = st.columns([1, 1])
         with col_btn1:
-            if st.button("🎯 Recentrer sur Combronde", use_container_width=True):
+            if st.button("🎯 Recentrer sur Combronde", width='stretch'):
                 st.session_state.marker_position = [45.9803, 3.0889]
                 st.session_state.map_zoom = 13
                 st.session_state.map_key = st.session_state.get('map_key', 0) + 1
                 st.rerun()
         with col_btn2:
-            if st.button("📍 C'est ICI!", type="primary", use_container_width=True):
+            if st.button("📍 C'est ICI!", type="primary", width='stretch'):
                 user_coords = tuple(st.session_state.marker_position)
                 
                 # Calcul de la distance
