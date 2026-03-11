@@ -10,6 +10,7 @@ from geopy.distance import geodesic
 import piexif
 import io
 import base64
+from datetime import datetime
 
 # Configuration de la page
 st.set_page_config(
@@ -17,6 +18,25 @@ st.set_page_config(
     page_icon="🗺️",
     layout="wide"
 )
+
+# Vérification de la date d'expiration
+EXPIRATION_DATE = datetime(2026, 3, 13, 23, 55, 0)
+current_date = datetime.now()
+
+if current_date > EXPIRATION_DATE:
+    st.markdown("""
+        <div style="text-align: center; padding: 3rem; background: linear-gradient(135deg, #9CA76C 0%, #6B3E3E 100%); border-radius: 15px; margin: 2rem;">
+            <h1 style="color: white; font-size: 2.5rem;">🗓️ Application fermée</h1>
+            <p style="color: #F5F1E8; font-size: 1.3rem; margin-top: 1rem;">
+                Cette application était disponible jusqu'au vendredi 13 mars 2026 à 23h55.
+            </p>
+            <p style="color: #F5F1E8; font-size: 1.1rem; margin-top: 1rem;">
+                Merci de votre participation !<br>
+                Pour plus d'informations, contactez la liste électorale COMBRONDE C'est vous!
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+    st.stop()
 
 # CSS personnalisé avec les couleurs du logo (marron, vert olive, orange)
 st.markdown("""
